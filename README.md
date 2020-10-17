@@ -74,3 +74,4 @@ View the [FAQ in the wiki](https://github.com/jprice-da15252/slack-orb/wiki/FAQ)
 We welcome [issues](https://github.com/CircleCI-Public/slack-orb/issues) to and [pull requests](https://github.com/CircleCI-Public/slack-orb/pulls) against this repository!
 
 For further questions/comments about this or other orbs, visit [CircleCI's orbs discussion forum](https://discuss.circleci.com/c/orbs).
+
