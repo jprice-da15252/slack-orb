@@ -8,7 +8,7 @@ Send Slack notifications from your CircleCI pipelines even easier with Slack Orb
 
 ### Setup
 
-In order to use the Slack Orb on CircleCI you will need to create a Slack App and provide an OAuth token. Find the guide in the wiki: [How to setup slack orb](https://github.com/CircleCI-Public/slack-orb/wiki/Setup)
+In order to use the Slack Orb on CircleCI you will need to create a Slack App and provide an OAuth token. Find the guide in the wiki: [How to setup slack orb](https://github.com/jprice-da15252/slack-orb/wiki/Setup)
 
 ### Use In Config
 
@@ -67,7 +67,7 @@ See [usage examples](https://circleci.com/developer/orbs/orb/circleci/slack#usag
 
 ## FAQ
 
-View the [FAQ in the wiki](https://github.com/CircleCI-Public/slack-orb/wiki/FAQ)
+View the [FAQ in the wiki](https://github.com/jprice-da15252/slack-orb/wiki/FAQ)
 
 ## Contributing
 
