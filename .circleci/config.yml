@@ -53,7 +53,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "This test will @ a normal user, a user ID, and normal group name: <@U8C9ETTUG>, @orbs, @gabriel"
+                    "text": "This test will @ a normal user, a user ID, and normal group name: <@UF09RJYBD>, @orbs, @Jesse"
                   }
                 }
               ]
