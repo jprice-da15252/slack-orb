@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  slack: circleci/slack@<<pipeline.parameters.dev-orb-version>>
+  slack: jprice-da15252/slack@<<pipeline.parameters.dev-orb-version>>
   orb-tools: circleci/orb-tools@9.3
   bats: circleci/bats@1.0
   shellcheck: circleci/shellcheck@2.0
@@ -53,7 +53,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "This test will @ a normal user, a user ID, and normal group name: <@U8C9ETTUG>, @orbs, @gabriel"
+                    "text": "This test will @ a normal user, a user ID, and normal group name: <@UF09RJYBD>, @orbs, @Jesse"
                   }
                 }
               ]
@@ -84,7 +84,6 @@ jobs:
             }
 
 workflows:
-
   test-pack:
     unless: << pipeline.parameters.run-integration-tests >>
     jobs:
@@ -113,7 +112,7 @@ workflows:
       # store CIRCLE_TOKEN as a project env var or Contexts resource
       # if using Contexts, add your context below
       - orb-tools/publish-dev:
-          orb-name: circleci/slack
+          orb-name: jprice-da15252/slack
           context: orb-publishing
           requires:
             - hold-for-dev-publish
@@ -136,17 +135,17 @@ workflows:
           context: SLACK_NOTIFICATIONS_TEST
           matrix:
             parameters:
-              runner: [cimg, mac, alpine]
+              runner: [cimg, alpine]
 
       - orb-tools/dev-promote-prod-from-commit-subject:
-          orb-name: circleci/slack
+          orb-name: jprice-da15252/slack
           context: orb-publishing
           add-pr-comment: true
           bot-token-variable: GHI_TOKEN
           bot-user: cpe-bot
           fail-if-semver-not-indicated: true
           publish-version-tag: true
-          ssh-fingerprints: 79:ae:f5:10:17:8a:d2:9a:ed:63:5c:b0:92:66:23:49
+          ssh-fingerprints: 7a:ad:90:f0:b8:52:da:ae:fd:71:3e:90:4c:1f:8a:16
           requires:
             - integration-test-templates
           filters:

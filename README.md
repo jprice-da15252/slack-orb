@@ -1,4 +1,4 @@
-# Slack Orb  [![CircleCI Build Status](https://circleci.com/gh/CircleCI-Public/slack-orb.svg?style=shield "CircleCI Build Status")](https://circleci.com/gh/CircleCI-Public/slack-orb) [![CircleCI Orb Version](https://img.shields.io/badge/endpoint.svg?url=https://badges.circleci.io/orb/circleci/slack)](https://circleci.com/orbs/registry/orb/circleci/slack) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/circleci-public/slack-orb/master/LICENSE) [![CircleCI Community](https://img.shields.io/badge/community-CircleCI%20Discuss-343434.svg)](https://discuss.circleci.com/c/ecosystem/orbs)
+# Slack Orb  [![CircleCI Build Status](https://circleci.com/gh/jprice-da15252/slack-orb.svg?style=shield "CircleCI Build Status")](https://circleci.com/gh/jprice-da15252/slack-orb) [![CircleCI Orb Version](https://img.shields.io/badge/endpoint.svg?url=https://badges.circleci.io/orb/circleci/slack)](https://circleci.com/orbs/registry/orb/circleci/slack) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/jprice-da15252/slack-orb/master/LICENSE) [![CircleCI Community](https://img.shields.io/badge/community-CircleCI%20Discuss-343434.svg)](https://discuss.circleci.com/c/ecosystem/orbs)
 
 Send Slack notifications from your CircleCI pipelines even easier with Slack Orb 4.0
 
@@ -8,7 +8,7 @@ Send Slack notifications from your CircleCI pipelines even easier with Slack Orb
 
 ### Setup
 
-In order to use the Slack Orb on CircleCI you will need to create a Slack App and provide an OAuth token. Find the guide in the wiki: [How to setup slack orb](https://github.com/CircleCI-Public/slack-orb/wiki/Setup)
+In order to use the Slack Orb on CircleCI you will need to create a Slack App and provide an OAuth token. Find the guide in the wiki: [How to setup slack orb](https://github.com/jprice-da15252/slack-orb/wiki/Setup)
 
 ### Use In Config
 
@@ -67,10 +67,11 @@ See [usage examples](https://circleci.com/developer/orbs/orb/circleci/slack#usag
 
 ## FAQ
 
-View the [FAQ in the wiki](https://github.com/CircleCI-Public/slack-orb/wiki/FAQ)
+View the [FAQ in the wiki](https://github.com/jprice-da15252/slack-orb/wiki/FAQ)
 
 ## Contributing
 
 We welcome [issues](https://github.com/CircleCI-Public/slack-orb/issues) to and [pull requests](https://github.com/CircleCI-Public/slack-orb/pulls) against this repository!
 
 For further questions/comments about this or other orbs, visit [CircleCI's orbs discussion forum](https://discuss.circleci.com/c/orbs).
+
