@@ -35,6 +35,7 @@ PostToSlack() {
     do
         echo "Sending to Slack Channel: $i"
         SLACK_MSG_BODY=$(echo "$SLACK_MSG_BODY" | jq --arg channel "$i" '.channel = $channel')
+        # Use stdin for providing message text via pipe. Avoids argument length limit failures
         echo "$SLACK_MSG_BODY" | curl -s -f -X POST -H 'Content-type: application/json' \
         -H "Authorization: Bearer $SLACK_ACCESS_TOKEN" \
         --data @- \
