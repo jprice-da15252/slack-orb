@@ -35,15 +35,16 @@ PostToSlack() {
         SLACK_MSG_BODY=$(echo "$SLACK_MSG_BODY" | jq --arg channel "$i" '.channel = $channel')
         # Use stdin for providing message text via pipe. Avoids argument length limit failures
         URL="https://slack.com/api/chat.postMessage"
-        HTTP_RESPONSE=$(curl -s -f \
-                        -X POST \
-                        --header "Authorization: Bearer $SLACK_ACCESS_TOKEN" \
-                        --header "Content-Type: application/json" \
-                        -o curl_response.txt \
-                        -w "%{http_code}" \
-                        --data @- \
-                        $URL <<<"${SLACK_MSG_BODY}"
-                    )
+        HTTP_RESPONSE=$(
+            curl -s -f \
+                -X POST \
+                --header "Authorization: Bearer $SLACK_ACCESS_TOKEN" \
+                --header "Content-Type: application/json" \
+                -o curl_response.txt \
+                -w "%{http_code}" \
+                --data @- \
+                $URL <<<"${SLACK_MSG_BODY}"
+        )
         if [ $? -eq 0 ]; then
             echo "Curl command succeeded!"
         else
@@ -62,7 +63,6 @@ PostToSlack() {
             echo -e "\e[93mReceived status code: ${HTTP_RESPONSE}\e[0m"
             echo "Response:"
             jq '.' curl_response.txt
-            result=""
             exit 1
         fi
     done
