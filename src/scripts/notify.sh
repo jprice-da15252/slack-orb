@@ -55,12 +55,12 @@ PostToSlack() {
             echo "API call succeeded. Response:"
             jq '.' curl_response.txt
             successful=$(jq '.id' curl_response.txt)
-            if [[ $successful == 'false' ]]; then
+            if [ $successful == 'false' ]; then
                 echo "WARN: Slack API reponse indicated a problem with the request. Review Response output above."
             fi
         else
             echo "ERROR: Slack API returned error status"
-            echo -e "\e[93mReceived status code: ${HTTP_RESPONSE}\e[0m"
+            echo "Received status code: ${HTTP_RESPONSE}"
             echo "Response:"
             jq '.' curl_response.txt
             exit 1
