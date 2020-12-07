@@ -21,33 +21,58 @@ BuildMessageBody() {
     SLACK_MSG_BODY=$T2
 }
 
-
 PostToSlack() {
     # Post once per channel listed by the channel parameter
     #    The channel must be modified in SLACK_MSG_BODY
 
     # If no channel is provided, quit with error
     if [ "$SLACK_PARAM_CHANNEL" = "" ]; then
-       echo "No channel was provided. Enter value for SLACK_DEFAULT_CHANNEL env var, or channel parameter"
-       exit 0
+        echo "No channel was provided. Enter value for SLACK_DEFAULT_CHANNEL env var, or channel parameter"
+        exit 0
     fi
-    for i in $(echo $(eval echo "$SLACK_PARAM_CHANNEL")  | sed "s/,/ /g")
-    do
+    for i in $(echo $(eval echo "$SLACK_PARAM_CHANNEL") | sed "s/,/ /g"); do
         echo "Sending to Slack Channel: $i"
         SLACK_MSG_BODY=$(echo "$SLACK_MSG_BODY" | jq --arg channel "$i" '.channel = $channel')
         # Use stdin for providing message text via pipe. Avoids argument length limit failures
-        echo "$SLACK_MSG_BODY" | curl -s -f -X POST -H 'Content-type: application/json' \
-        -H "Authorization: Bearer $SLACK_ACCESS_TOKEN" \
-        --data @- \
-        https://slack.com/api/chat.postMessage > /dev/null
+        URL="https://slack.com/api/chat.postMessage"
+        HTTP_RESPONSE=$(
+            echo "$SLACK_MSG_BODY" | curl -s -f \
+                -X POST \
+                --header "Authorization: Bearer $SLACK_ACCESS_TOKEN" \
+                --header "Content-Type: application/json" \
+                -o curl_response.txt \
+                -w "%{http_code}" \
+                --data @- \
+                $URL
+        )
+        if [ $? -eq 0 ]; then
+            echo "[INFO] Curl command succeeded!"
+        else
+            echo "[ERROR] Curl command general failure"
+            exit 1
+        fi
+        if [ "$HTTP_RESPONSE" -ge "200" ] && [ "$HTTP_RESPONSE" -lt "300" ]; then
+            echo "[INFO] API call succeeded. Response:"
+            jq '.' curl_response.txt
+            successful=$(jq '.id' curl_response.txt)
+            if [ $successful = 'false' ]; then
+                echo "[WARN] Slack API reponse indicated a problem with the request. Review Response output above."
+            fi
+        else
+            echo "[ERROR] Slack API returned error status"
+            echo "Received status code: ${HTTP_RESPONSE}"
+            echo "Response:"
+            jq '.' curl_response.txt
+            exit 1
+        fi
     done
 }
 
 Notify() {
     if [ "$CCI_STATUS" = "$SLACK_PARAM_EVENT" ] || [ "$SLACK_PARAM_EVENT" = "always" ]; then
-    BranchFilter # In the event the Slack notification would be sent, first ensure it is allowed to trigger on this branch.
-    echo "Sending Notification"
-    PostToSlack
+        BranchFilter # In the event the Slack notification would be sent, first ensure it is allowed to trigger on this branch.
+        echo "Sending Notification"
+        PostToSlack
     else
         # dont send message.
         echo "NO SLACK ALERT"
@@ -69,23 +94,29 @@ ModifyCustomTemplate() {
 }
 
 InstallJq() {
-    if uname -a | grep Darwin > /dev/null 2>&1; then
+    if uname -a | grep Darwin >/dev/null 2>&1; then
         echo "Checking For JQ + CURL: MacOS"
         command -v jq >/dev/null 2>&1 || HOMEBREW_NO_AUTO_UPDATE=1 brew install jq --quiet
         return $?
 
-    elif cat /etc/issue | grep Debian > /dev/null 2>&1 || cat /etc/issue | grep Ubuntu > /dev/null 2>&1; then
+    elif cat /etc/issue | grep Debian >/dev/null 2>&1 || cat /etc/issue | grep Ubuntu >/dev/null 2>&1; then
         echo "Checking For JQ + CURL: Debian"
         if [ "$(id -u)" = 0 ]; then export SUDO=""; else # Check if we're root
-            export SUDO="sudo";
+            export SUDO="sudo"
         fi
         command -v jq >/dev/null 2>&1 || { $SUDO apt -qq update && $SUDO apt -qq install -y jq; }
         return $?
 
-    elif cat /etc/issue | grep Alpine > /dev/null 2>&1; then
+    elif cat /etc/issue | grep Alpine >/dev/null 2>&1; then
         echo "Checking For JQ + CURL: Alpine"
-        command -v curl >/dev/null 2>&1 || { echo >&2 "SLACK ORB ERROR: CURL is required. Please install."; exit 1; }
-        command -v jq >/dev/null 2>&1 || { echo >&2 "SLACK ORB ERROR: JQ is required. Please install"; exit 1; }
+        command -v curl >/dev/null 2>&1 || {
+            echo >&2 "SLACK ORB ERROR: CURL is required. Please install."
+            exit 1
+        }
+        command -v jq >/dev/null 2>&1 || {
+            echo >&2 "SLACK ORB ERROR: JQ is required. Please install"
+            exit 1
+        }
         return $?
     fi
 }
@@ -93,12 +124,11 @@ InstallJq() {
 BranchFilter() {
     # If any pattern supplied matches the current branch, proceed; otherwise, exit with message.
     FLAG_MATCHES_FILTER="false"
-    for i in $(echo "$SLACK_PARAM_BRANCHPATTERN" | sed "s/,/ /g")
-    do
-     if echo "$CIRCLE_BRANCH" | grep -Eq "^${i}$" ; then
-        FLAG_MATCHES_FILTER="true"
-        break
-     fi
+    for i in $(echo "$SLACK_PARAM_BRANCHPATTERN" | sed "s/,/ /g"); do
+        if echo "$CIRCLE_BRANCH" | grep -Eq "^${i}$"; then
+            FLAG_MATCHES_FILTER="true"
+            break
+        fi
     done
     if [ "$FLAG_MATCHES_FILTER" = "false" ]; then
         # dont send message.
