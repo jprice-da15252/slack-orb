@@ -54,8 +54,8 @@ PostToSlack() {
         if [ "$HTTP_RESPONSE" -ge "200" ] && [ "$HTTP_RESPONSE" -lt "300" ]; then
             echo "[INFO] API call succeeded. Response:"
             jq '.' curl_response.txt
-            successful=$(jq '.id' curl_response.txt)
-            if [ $successful = 'false' ]; then
+            successful=$(jq '.ok' curl_response.txt)
+            if [ ! $successful = 'true' ]; then
                 echo "[WARN] Slack API reponse indicated a problem with the request. Review Response output above."
             fi
         else
