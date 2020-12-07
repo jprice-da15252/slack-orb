@@ -36,14 +36,14 @@ PostToSlack() {
         # Use stdin for providing message text via pipe. Avoids argument length limit failures
         URL="https://slack.com/api/chat.postMessage"
         HTTP_RESPONSE=$(
-            curl -s -f \
+            echo "$SLACK_MSG_BODY" | curl -s -f \
                 -X POST \
                 --header "Authorization: Bearer $SLACK_ACCESS_TOKEN" \
                 --header "Content-Type: application/json" \
                 -o curl_response.txt \
                 -w "%{http_code}" \
                 --data @- \
-                $URL <<<"${SLACK_MSG_BODY}"
+                $URL
         )
         if [ $? -eq 0 ]; then
             echo "Curl command succeeded!"
