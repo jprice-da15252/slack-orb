@@ -46,20 +46,20 @@ PostToSlack() {
                 $URL
         )
         if [ $? -eq 0 ]; then
-            echo "Curl command succeeded!"
+            echo "[INFO] Curl command succeeded!"
         else
-            echo "ERROR: Curl command general failure"
+            echo "[ERROR] Curl command general failure"
             exit 1
         fi
         if [ "$HTTP_RESPONSE" -ge "200" ] && [ "$HTTP_RESPONSE" -lt "300" ]; then
-            echo "API call succeeded. Response:"
+            echo "[INFO] API call succeeded. Response:"
             jq '.' curl_response.txt
             successful=$(jq '.id' curl_response.txt)
             if [ $successful = 'false' ]; then
-                echo "WARN: Slack API reponse indicated a problem with the request. Review Response output above."
+                echo "[WARN] Slack API reponse indicated a problem with the request. Review Response output above."
             fi
         else
-            echo "ERROR: Slack API returned error status"
+            echo "[ERROR] Slack API returned error status"
             echo "Received status code: ${HTTP_RESPONSE}"
             echo "Response:"
             jq '.' curl_response.txt
