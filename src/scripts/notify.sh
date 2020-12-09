@@ -5,12 +5,13 @@ BuildMessageBody() {
     #   If none, error.
     if [ -n "$SLACK_PARAM_CUSTOM" ]; then
         ModifyCustomTemplate
-        CUSTOM_BODY_MODIFIED=$(echo "$CUSTOM_BODY_MODIFIED" | sed 's/"/\\"/g' | sed 's/\\n/\\\\n/g' | sed 's/|/\\|/g' | sed 's/</\\</g' | sed 's/>/\\>/g')
-        T2=$(eval echo $CUSTOM_BODY_MODIFIED)
+        # shellcheck disable=SC2016
+        CUSTOM_BODY_MODIFIED=$(echo "$CUSTOM_BODY_MODIFIED" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | sed 's/`/\\`/g')
+        T2=$(eval echo \""$CUSTOM_BODY_MODIFIED"\")
     elif [ -n "$SLACK_PARAM_TEMPLATE" ]; then
-        TEMPLATE="$(echo \$$SLACK_PARAM_TEMPLATE)"
-        T1=$(eval echo $TEMPLATE | sed 's/"/\\"/g' | sed 's/\\n/\\\\n/g')
-        T2=$(eval echo $T1)
+        TEMPLATE="\$$SLACK_PARAM_TEMPLATE"
+        T1=$(eval echo "$TEMPLATE" | sed 's/"/\\"/g')
+        T2=$(eval echo \""$T1"\")
     else
         echo "Error: No message template selected."
         echo "Select either a custom template or one of the pre-included ones via the 'custom' or 'template' parameters."
@@ -25,62 +26,16 @@ PostToSlack() {
     # Post once per channel listed by the channel parameter
     #    The channel must be modified in SLACK_MSG_BODY
 
-    # If no channel is provided, quit with error
-    if [ "$SLACK_PARAM_CHANNEL" = "" ]; then
-        echo "No channel was provided. Enter value for SLACK_DEFAULT_CHANNEL env var, or channel parameter"
-        exit 0
-    fi
-    for i in $(echo $(eval echo "$SLACK_PARAM_CHANNEL") | sed "s/,/ /g"); do
+    # shellcheck disable=SC2001
+    for i in $(eval echo \""$SLACK_PARAM_CHANNEL"\" | sed "s/,/ /g")
+    do
         echo "Sending to Slack Channel: $i"
         SLACK_MSG_BODY=$(echo "$SLACK_MSG_BODY" | jq --arg channel "$i" '.channel = $channel')
-        # Use stdin for providing message text via pipe. Avoids argument length limit failures
-        URL="https://slack.com/api/chat.postMessage"
-        HTTP_RESPONSE=$(
-            echo "$SLACK_MSG_BODY" | curl -s -f \
-                -X POST \
-                --header "Authorization: Bearer $SLACK_ACCESS_TOKEN" \
-                --header "Content-Type: application/json" \
-                -o curl_response.txt \
-                -w "%{http_code}" \
-                --data @- \
-                $URL
-        )
-        if [ $? -eq 0 ]; then
-            echo "[INFO] Curl command succeeded!"
-        else
-            echo "[ERROR] Curl command general failure"
-            exit 1
-        fi
-        if [ "$HTTP_RESPONSE" -ge "200" ] && [ "$HTTP_RESPONSE" -lt "300" ]; then
-            echo "[INFO] API call succeeded. Response:"
-            jq '.' curl_response.txt
-            successful=$(jq '.ok' curl_response.txt)
-            if [ ! $successful = 'true' ]; then
-                echo "[WARN] Slack API reponse indicated a problem with the request. Review Response output above."
-            fi
-        else
-            echo "[ERROR] Slack API returned error status"
-            echo "Received status code: ${HTTP_RESPONSE}"
-            echo "Response:"
-            jq '.' curl_response.txt
-            exit 1
-        fi
+        curl -s -f -X POST -H 'Content-type: application/json' \
+        -H "Authorization: Bearer $SLACK_ACCESS_TOKEN" \
+        --data \
+        "$SLACK_MSG_BODY" https://slack.com/api/chat.postMessage | jq '{ok: .ok, error: .error}'
     done
-}
-
-Notify() {
-    if [ "$CCI_STATUS" = "$SLACK_PARAM_EVENT" ] || [ "$SLACK_PARAM_EVENT" = "always" ]; then
-        BranchFilter # In the event the Slack notification would be sent, first ensure it is allowed to trigger on this branch.
-        echo "Sending Notification"
-        PostToSlack
-    else
-        # dont send message.
-        echo "NO SLACK ALERT"
-        echo
-        echo "This command is set to send an alert on: $SLACK_PARAM_EVENT"
-        echo "Current status: ${CCI_STATUS}"
-        exit 0
-    fi
 }
 
 ModifyCustomTemplate() {
@@ -121,11 +76,16 @@ InstallJq() {
     fi
 }
 
-BranchFilter() {
-    # If any pattern supplied matches the current branch, proceed; otherwise, exit with message.
+FilterBy() {
+    if [ -z "$1" ] || [ -z "$2" ]; then
+      return
+    fi
+
+    # If any pattern supplied matches the current branch or the current tag, proceed; otherwise, exit with message.
     FLAG_MATCHES_FILTER="false"
-    for i in $(echo "$SLACK_PARAM_BRANCHPATTERN" | sed "s/,/ /g"); do
-        if echo "$CIRCLE_BRANCH" | grep -Eq "^${i}$"; then
+    for i in $(echo "$1" | sed "s/,/ /g")
+    do
+        if echo "$2" | grep -Eq "^${i}$"; then
             FLAG_MATCHES_FILTER="true"
             break
         fi
@@ -134,8 +94,44 @@ BranchFilter() {
         # dont send message.
         echo "NO SLACK ALERT"
         echo
-        echo 'Current branch does not match any item from the "branch_pattern" parameter'
-        echo "Current branch: ${CIRCLE_BRANCH}"
+        echo "Current reference \"$2\" does not match any matching parameter"
+        echo "Current matching pattern: $1"
+        exit 0
+    fi
+}
+
+CheckEnvVars() {
+    if [ -z "$SLACK_ACCESS_TOKEN" ]; then
+        echo "In order to use the Slack Orb (v4 +), an OAuth token must be present via the SLACK_ACCESS_TOKEN environment variable."
+        echo "Follow the setup guide available in the wiki: https://github.com/CircleCI-Public/slack-orb/wiki/Setup"
+        exit 1
+    fi
+    # If no channel is provided, quit with error
+    if [ -z "$SLACK_PARAM_CHANNEL" ]; then
+       echo "No channel was provided. Enter value for SLACK_DEFAULT_CHANNEL env var, or channel parameter"
+       exit 1
+    fi
+    if [ -n "$SLACK_WEBHOOK" ]; then
+        echo "It appears you have a Slack Webhook token present in this job."
+        echo "Please note, Webhooks are no longer used for the Slack Orb (v4 +)."
+        echo "Follow the setup guide available in the wiki: https://github.com/CircleCI-Public/slack-orb/wiki/Setup"
+    fi
+}
+
+ShouldPost() {
+    if [ "$CCI_STATUS" = "$SLACK_PARAM_EVENT" ] || [ "$SLACK_PARAM_EVENT" = "always" ]; then
+        # In the event the Slack notification would be sent, first ensure it is allowed to trigger
+        # on this branch or this tag.
+        FilterBy "$SLACK_PARAM_BRANCHPATTERN" "$CIRCLE_BRANCH"
+        FilterBy "$SLACK_PARAM_TAGPATTERN" "$CIRCLE_TAG"
+
+        echo "Posting Status"
+    else 
+        # dont send message.
+        echo "NO SLACK ALERT"
+        echo
+        echo "This command is set to send an alert on: $SLACK_PARAM_EVENT"
+        echo "Current status: ${CCI_STATUS}"
         exit 0
     fi
 }
@@ -144,8 +140,11 @@ BranchFilter() {
 # This is done so this script may be tested.
 ORB_TEST_ENV="bats-core"
 if [ "${0#*$ORB_TEST_ENV}" = "$0" ]; then
+    CheckEnvVars
     . "/tmp/SLACK_JOB_STATUS"
+    ShouldPost
     InstallJq
     BuildMessageBody
-    Notify
+    PostToSlack
+
 fi
